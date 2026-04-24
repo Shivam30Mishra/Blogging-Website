@@ -1,36 +1,198 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PulsePress
 
-## Getting Started
+PulsePress is a full-stack blogging platform built for the Hivon Automations internship assignment. It includes a premium SaaS-style frontend, Supabase authentication and database integration, role-based access control, searchable/paginated post listings, comments, and AI-generated summaries using the Google Gemini API.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Role-based user system
+  - `Viewer`: browse posts, read summaries, comment on posts
+  - `Author`: create posts, edit their own posts, view comments on their posts
+  - `Admin`: view all posts, edit any post, monitor comments
+- Blog features
+  - title, featured image URL, body content, comments
+  - search on the listing page
+  - pagination on the listing page
+  - author/admin post editing
+- AI workflow
+  - summary generated automatically on create
+  - summary regenerated on edit
+  - summary stored in Supabase
+  - stored summary displayed on listing cards and article pages
+- Premium UI
+  - responsive layout
+  - motion-enhanced cards
+  - polished dashboard
+  - loading skeletons
+  - empty states
+
+## Tech stack
+
+- Next.js 16
+- React 19
+- Tailwind CSS 4
+- Framer Motion
+- Supabase Auth
+- Supabase Postgres
+- Google Gemini API via `@google/genai`
+- TypeScript
+- Zod validation
+
+## Project structure
+
+```text
+app/
+  actions.ts
+  auth/page.tsx
+  blog/[slug]/page.tsx
+  dashboard/page.tsx
+  loading.tsx
+  layout.tsx
+  not-found.tsx
+  page.tsx
+components/
+  auth/
+  blog/
+  dashboard/
+  layout/
+  system/
+  ui/
+lib/
+  ai.ts
+  auth.ts
+  content.ts
+  data.ts
+  env.ts
+  supabase/
+  types.ts
+supabase/
+  schema.sql
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env.local` and fill in:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+GEMINI_API_KEY=your_google_gemini_api_key
+```
 
-## Learn More
+## Supabase setup
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a new Supabase project.
+2. Open the SQL editor.
+3. Run the contents of `supabase/schema.sql`.
+4. In Supabase Auth settings, enable Email/Password sign-in.
+5. Create viewer and author accounts from the app.
+6. Promote one account to admin with:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sql
+update public.users
+set role = 'admin'
+where email = 'your-admin-email@example.com';
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Run locally
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open `http://localhost:3000`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Production build
+
+```bash
+npm run lint
+npm run build
+npm run start
+```
+
+## Deployment
+
+### Vercel
+
+1. Push the repository to GitHub.
+2. Import the project into Vercel.
+3. Add the three environment variables from `.env.local`.
+4. Deploy.
+
+### Netlify
+
+1. Push the repository to GitHub.
+2. Import the repo into Netlify as a Next.js project.
+3. Add the same environment variables.
+4. Deploy.
+
+## Authentication flow
+
+- Users sign up with email, password, name, and role (`viewer` or `author`).
+- Supabase Auth creates the authenticated user.
+- A database trigger copies that user into `public.users`.
+- Server-side role checks gate dashboard access and post actions.
+- `viewer` users stay on the public reading experience.
+- `author` and `admin` users access the dashboard.
+
+## Role-based access logic
+
+- Public users can read posts and comments.
+- Authenticated users can create comments as themselves.
+- Only `author` and `admin` users can create posts.
+- Authors can update only their own posts.
+- Admins can update any post and monitor all comments.
+- Supabase Row Level Security policies enforce this in the database.
+
+## Post creation and AI summary flow
+
+1. Author/Admin submits the post form.
+2. Server action validates the payload with Zod.
+3. Server action generates a unique slug.
+4. Gemini creates a roughly 200-word summary on the server.
+5. The post and generated summary are stored in Supabase.
+6. The listing and article pages read the saved summary directly from the database.
+
+## Cost optimization notes
+
+- Summaries are generated only on create/edit, not on every page load.
+- Generated summaries are stored in the `posts.summary` column.
+- Listing pages reuse stored summaries instead of making repeated AI calls.
+- This reduces latency, token usage, and repeated inference cost.
+
+## AI tools used
+
+- Codex
+
+Why it was used:
+- It accelerated UI refactoring, backend wiring, schema design, and integration work in one workflow.
+- It helped translate the assignment brief into an actual working architecture quickly.
+
+How it helped:
+- planned the end-to-end structure
+- implemented reusable components
+- wired Supabase SSR auth
+- added role-checked server actions
+- integrated Gemini summary generation
+- prepared SQL schema and setup documentation
+
+## Submission checklist
+
+Before submitting, add these:
+
+1. GitHub repository link
+2. Live deployed URL
+3. Short explanation covering:
+   - AI tools used
+   - authentication flow
+   - role-based access
+   - post creation logic
+   - AI summary generation flow
+   - cost optimization strategy
+   - one bug faced and how you fixed it
+   - key architectural decisions
+
+## Notes
+
+- The app is fully wired for the required stack.
+- To make it truly live end-to-end, you still need your real Supabase project, Gemini key, GitHub repo, and deployment target.
