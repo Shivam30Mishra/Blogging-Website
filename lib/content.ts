@@ -30,6 +30,11 @@ export function formatDate(input: string) {
 }
 
 export function formatRelativeDate(input: string) {
+  // Avoid using Date.now() during server-side rendering to prevent hydration mismatches
+  if (typeof window === 'undefined') {
+    return formatDate(input);
+  }
+
   const date = new Date(input).getTime();
   const diffMs = Date.now() - date;
   const diffHours = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60)));
